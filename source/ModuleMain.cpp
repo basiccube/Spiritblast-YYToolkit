@@ -3,6 +3,7 @@ using namespace Aurie;
 using namespace YYTK;
 
 #include <vector>
+#include <map>
 using namespace std;
 
 #include <fstream>
@@ -282,6 +283,31 @@ void EventCallback(FWCodeEvent &eventCtx)
 	{
 		// Create event
 		case 0:
+			if (event_object_name.ToString() == "ob_mainMenu")
+			{
+				RValue menu = GetInstance("ob_mainMenu");
+				if (menu.IsUndefined())
+				{
+					Print("No main menu instance found");
+					break;
+				}
+
+				RValue menuButton = g_interface->CallBuiltin("asset_get_index", {RValue("menuButton")});
+				if (menuButton.ToInt32() == GM_INVALID)
+					break;
+				
+				map<string, RValue> debugBtnMap;
+				RValue debugButton = RValue(debugBtnMap);
+
+				CInstance *debugInst = debugButton.ToInstance();
+				CInstance *menuInst = menu.ToInstance();
+
+				RValue res = RValue();
+				//g_interface->CallBuiltinEx(res, "script_execute", debugInst, menuInst, {menuButton, RValue("Debug")});
+
+				//RValue debugButton = RValue();
+				//g_interface->CallGameScriptEx(debugButton, "gml_Script_menuButton", menuInst.ToInstance(), menuInst.ToInstance(), {RValue("Debug")});
+			}
 			break;
 
 		// Destroy event
@@ -345,8 +371,7 @@ void EventCallback(FWCodeEvent &eventCtx)
 
 						const char *colObjects[] = {"ob_block", "ob_passthrough", "ob_passthroughSlope14",
 													"ob_passthroughSlope22", "ob_passthroughSlope45",
-													"ob_slope14", "ob_slope22", "ob_slope22_R",
-													"ob_slope45", "ob_slope45_R", "ob_ladder"};
+													"ob_slope14", "ob_slope22", "ob_slope45", "ob_ladder"};
 
 						for (int i = 0; i < sizeof(colObjects) / sizeof(colObjects[0]); i++)
 							GetDebugCollisionData(colObjects[i]);
