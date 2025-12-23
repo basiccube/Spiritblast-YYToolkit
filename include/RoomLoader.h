@@ -12,3 +12,6 @@ json LoadRoomData(string path);
 
 // Goes to the room used by the room loader.
 void GoToRoomLoaderRoom();
+
+// Initializes the room loader room using the currently loaded room data.
+void InitializeRoomLoaderRoom();

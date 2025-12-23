@@ -143,6 +143,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="include\YYToolkit\YYTK_Shared_Types.cpp" />
+    <ClCompile Include="source\DebugCollision.cpp" />
     <ClCompile Include="source\IniFile.cpp" />
     <ClCompile Include="source\Menus.cpp" />
     <ClCompile Include="source\Main.cpp" />
@@ -150,6 +151,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Aurie\shared.hpp" />
+    <ClInclude Include="include\DebugCollision.h" />
     <ClInclude Include="include\FunctionWrapper\FunctionWrapper.hpp" />
     <ClInclude Include="include\IniFile.h" />
     <ClInclude Include="include\json.hpp" />

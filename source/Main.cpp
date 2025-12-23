@@ -1,108 +1,14 @@
 #include "main.h"
 #include "IniFile.h"
 #include "Menus.h"
+#include "DebugCollision.h"
 #include "RoomLoader.h"
 
 YYTKInterface *g_interface = nullptr;
 
-struct SpriteData
-{
-	RValue sprite;
-	RValue x;
-	RValue y;
-	RValue xscale;
-	RValue yscale;
-	RValue angle;
-};
-
-vector<SpriteData> g_debugCollisionData;
-vector<SpriteData> g_debugCollisionDataBG;
-static bool g_showDebugCollision = false;
-
 void Print(RValue str)
 {
 	g_interface->CallBuiltin("show_debug_message", {str});
-}
-
-void DrawDebugCollisionDataBG()
-{
-	RValue camID = RValue();
-	g_interface->GetBuiltin("view_camera", nullptr, 0, camID);
-
-	RValue camX = g_interface->CallBuiltin("camera_get_view_x", {camID});
-
-	for (int i = 0; i < g_debugCollisionDataBG.size(); i++)
-	{
-		SpriteData &data = g_debugCollisionDataBG[i];
-		g_interface->CallBuiltin("draw_sprite_ext", {data.sprite,
-													RValue(0),
-													RValue(data.x.ToInt32() + 25 + (camX.ToInt32() * 0.5)),
-													data.y,
-													data.xscale,
-													data.yscale,
-													data.angle,
-													GM_C_WHITE,
-													RValue(1)});
-	}
-}
-
-void DrawDebugCollisionData()
-{
-	for (int i = 0; i < g_debugCollisionData.size(); i++)
-	{
-		SpriteData &data = g_debugCollisionData[i];
-		g_interface->CallBuiltin("draw_sprite_ext", {data.sprite,
-													RValue(0),
-													data.x,
-													data.y,
-													data.xscale,
-													data.yscale,
-													data.angle,
-													GM_C_WHITE,
-													RValue(1)});
-	}
-}
-
-void GetDebugCollisionData(const char* name, int gameplayLayer = 0)
-{
-	RValue obj = g_interface->CallBuiltin("asset_get_index", {RValue(name)});
-	RValue instNum = g_interface->CallBuiltin("instance_number", {obj});
-
-	for (int i = 0; i < instNum.ToInt32(); i++)
-	{
-		RValue inst = g_interface->CallBuiltin("instance_find", {obj, RValue(i)});
-		if (inst.IsUndefined())
-			continue;
-
-		RValue obj = g_interface->CallBuiltin("variable_instance_get", {inst, RValue("object_index")});
-		RValue objname = g_interface->CallBuiltin("object_get_name", {obj});
-		RValue layer = g_interface->CallBuiltin("variable_instance_get", {inst, RValue("gameplayLayer")});
-
-		if (objname.ToString() != name || layer.ToInt32() != gameplayLayer)
-			continue;
-
-		SpriteData data = {
-			g_interface->CallBuiltin("variable_instance_get", {inst, RValue("sprite_index")}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, RValue("x")}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, RValue("y")}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, RValue("image_xscale")}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, RValue("image_yscale")}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, RValue("image_angle")})
-		};
-
-		RValue validSprite = g_interface->CallBuiltin("sprite_exists", {data.sprite});
-		if (!validSprite.ToBoolean())
-		{
-			g_interface->CallBuiltin("show_debug_message", {data.sprite});
-			Print("Not a valid sprite, ignoring...");
-			continue;
-		}
-
-		if (gameplayLayer > 0)
-			g_debugCollisionDataBG.push_back(data);
-		else
-			g_debugCollisionData.push_back(data);
-	}
 }
 
 RValue GetInstance(string name)
@@ -161,6 +67,8 @@ static bool g_debugControls = false;
 static bool g_skipSplash = false;
 static int g_debugOptionsIndex = -1;
 
+static PFUNC_YYGMLScript g_envGetUsernameOriginal;
+
 // Hook used for changing the header text in the options menu.
 RValue &EnvironmentGetUsernameHook(CInstance *self, CInstance *other, RValue &returnValue, int argCount, RValue **args)
 {
@@ -194,8 +102,7 @@ RValue &EnvironmentGetUsernameHook(CInstance *self, CInstance *other, RValue &re
 	return returnValue;
 
 environment_get_username_func:
-	RValue username = g_interface->CallBuiltin("environment_get_variable", {"USERNAME"});
-	returnValue = username;
+	g_envGetUsernameOriginal(self, other, returnValue, argCount, args);
 	return returnValue;
 }
 
@@ -275,6 +182,50 @@ void EventCallback(FWCodeEvent &eventCtx)
 				case 0:
 					break;
 
+				// Begin Step event
+				case 1:
+					if (event_object_name.ToString() == "ob_player")
+					{
+						RValue debugOverlayOpen = g_interface->CallBuiltin("is_debug_overlay_open", {});
+						if (debugOverlayOpen.ToBoolean())
+						{
+							RValue playerInputManager = g_interface->CallBuiltin("asset_get_index", {"ob_playerInputManager"});
+							RValue debugCheck = g_interface->CallBuiltin("is_keyboard_used_debug_overlay", {});
+							RValue instCheck = g_interface->CallBuiltin("instance_exists", {playerInputManager});
+							if (debugCheck.ToBoolean())
+							{
+								if (instCheck.ToBoolean())
+									g_interface->CallBuiltin("instance_deactivate_object", {playerInputManager});
+							}
+							else
+							{
+								if (!instCheck.ToBoolean())
+									g_interface->CallBuiltin("instance_activate_object", {playerInputManager});
+							}
+						}
+					}
+					else if (event_object_name.ToString() == "ob_camera")
+					{
+						RValue debugOverlayOpen = g_interface->CallBuiltin("is_debug_overlay_open", {});
+						if (debugOverlayOpen.ToBoolean())
+						{
+							RValue globalInput = g_interface->CallBuiltin("asset_get_index", {"ob_globalInput"});
+							RValue debugCheck = g_interface->CallBuiltin("is_keyboard_used_debug_overlay", {});
+							RValue instCheck = g_interface->CallBuiltin("instance_exists", {globalInput});
+							if (debugCheck.ToBoolean())
+							{
+								if (instCheck.ToBoolean())
+									g_interface->CallBuiltin("instance_deactivate_object", {globalInput});
+							}
+							else
+							{
+								if (!instCheck.ToBoolean())
+									g_interface->CallBuiltin("instance_activate_object", {globalInput});
+							}
+						}
+					}
+					break;
+
 				// End Step event
 				case 2:
 					// Create the debug menu and button.
@@ -325,34 +276,7 @@ void EventCallback(FWCodeEvent &eventCtx)
 
 						// Load the custom room data if we are in the template room
 						if (roomName.ToString() == "rm_template_room")
-						{
-							RValue playerObject = g_interface->CallBuiltin("asset_get_index", {RValue("ob_player")});
-							if (!g_interface->CallBuiltin("instance_exists", {playerObject}).ToBoolean())
-							{
-								Print("Creating player object");
-								g_interface->CallBuiltin("instance_create_depth", {RValue(32), RValue(32), RValue(0), playerObject});
-							}
-
-							vector<json> objectData = g_roomData["objects"];
-							for (int i = 0; i < objectData.size(); i++)
-							{
-								json obj = objectData[i];
-
-								string oid = obj["id"];
-								int ox = obj["x"];
-								int oy = obj["y"];
-								int oxscale = obj["xscale"];
-								int oyscale = obj["yscale"];
-
-								RValue oasset = g_interface->CallBuiltin("asset_get_index", {RValue(oid)});
-								if (oasset.ToInt32() == GM_INVALID)
-									continue;
-
-								RValue oinst = g_interface->CallBuiltin("instance_create_layer", {RValue(ox), RValue(oy), RValue("InstancesFG"), oasset});
-								g_interface->CallBuiltin("variable_instance_set", {oinst, RValue("image_xscale"), RValue(oxscale)});
-								g_interface->CallBuiltin("variable_instance_set", {oinst, RValue("image_yscale"), RValue(oyscale)});
-							}
-						}
+							InitializeRoomLoaderRoom();
 						else if (roomName.ToString() == "rm_splashScreen" && g_skipSplash)
 						{
 							RValue rm_logoDrop = g_interface->CallBuiltin("asset_get_index", {"rm_logoDrop"});
@@ -364,21 +288,7 @@ void EventCallback(FWCodeEvent &eventCtx)
 						}
 
 						// Get the sprite data from all of the debug collision objects
-						Print("Getting debug collision sprite data");
-
-						const char *colObjects[] = {"ob_block", "ob_passthrough", "ob_passthroughSlope14",
-													"ob_passthroughSlope22", "ob_passthroughSlope45",
-													"ob_slope14", "ob_slope22", "ob_slope45", "ob_ladder"};
-
-						for (int i = 0; i < sizeof(colObjects) / sizeof(colObjects[0]); i++)
-							GetDebugCollisionData(colObjects[i]);
-
-						const char *colObjectsBG[] = {"ob_block_BG", "ob_passthrough_BG", "ob_ladder_BG",
-													"ob_passthroughSlope22_BG", "ob_passthroughSlope45_BG",
-													"ob_slope12_BG", "ob_slope22_BG", "ob_slope45_BG"};
-
-						for (int i = 0; i < sizeof(colObjectsBG) / sizeof(colObjectsBG[0]); i++)
-							GetDebugCollisionData(colObjectsBG[i], 1);
+						DebugCollisionInit();
 					}
 					break;
 
@@ -386,9 +296,17 @@ void EventCallback(FWCodeEvent &eventCtx)
 				case 5:
 					if (event_object_name.ToString() == "ob_camera")
 					{
-						Print("Clearing debug collision sprite data");
-						g_debugCollisionData.clear();
-						g_debugCollisionDataBG.clear();
+						ClearDebugCollisionData();
+						
+						RValue debugOverlayOpen = g_interface->CallBuiltin("is_debug_overlay_open", {});
+						if (debugOverlayOpen.ToBoolean())
+						{
+							RValue playerInputManager = g_interface->CallBuiltin("asset_get_index", {"ob_playerInputManager"});
+							RValue globalInput = g_interface->CallBuiltin("asset_get_index", {"ob_globalInput"});
+
+							g_interface->CallBuiltin("instance_activate_object", {playerInputManager});
+							g_interface->CallBuiltin("instance_activate_object", {globalInput});
+						}
 					}
 
 					g_createdDebugMenu = false;
@@ -511,6 +429,52 @@ void EventCallback(FWCodeEvent &eventCtx)
 	}
 }
 
+PFUNC_YYGMLScript CreateHook(AurieModule *module, const char* funcName, const char* hookIdentifier, PVOID hookFunction)
+{
+	CScript *scrData = nullptr;
+	PFUNC_YYGMLScript scrFunction = nullptr;
+
+	AurieStatus status = g_interface->GetNamedRoutinePointer(funcName, reinterpret_cast<PVOID*>(&scrData));
+	if (!AurieSuccess(status))
+	{
+		Print(RValue("Failed to get script data for " + string(funcName)));
+		return nullptr;
+	}
+
+	Print(RValue("Hooking into " + string(funcName)));
+	status = MmCreateHook(module, hookIdentifier, scrData->m_Functions->m_ScriptFunction, hookFunction, reinterpret_cast<PVOID*>(&scrFunction));
+	if (!AurieSuccess(status))
+	{
+		Print(RValue("Failed to create hook for " + string(funcName)));
+		return nullptr;
+	}
+
+	return scrFunction;
+}
+
+TRoutine CreateBuiltinHook(AurieModule *module, const char *funcName, const char *hookIdentifier, PVOID hookFunction)
+{
+	TRoutine func = nullptr;
+	TRoutine funcOriginal = nullptr;
+
+	AurieStatus status = g_interface->GetNamedRoutinePointer(funcName, reinterpret_cast<PVOID*>(&func));
+	if (!AurieSuccess(status))
+	{
+		Print(RValue("Failed to get the function " + string(funcName)));
+		return nullptr;
+	}
+
+	Print(RValue("Hooking into " + string(funcName)));
+	status = MmCreateHook(module, hookIdentifier, func, hookFunction, reinterpret_cast<PVOID*>(&funcOriginal));
+	if (!AurieSuccess(status))
+	{
+		Print(RValue("Failed to create hook for " + string(funcName)));
+		return nullptr;
+	}
+
+	return funcOriginal;
+}
+
 EXPORTED AurieStatus ModuleInitialize(IN AurieModule* Module, IN const fs::path& ModulePath)
 {
 	UNREFERENCED_PARAMETER(ModulePath);
@@ -523,17 +487,19 @@ EXPORTED AurieStatus ModuleInitialize(IN AurieModule* Module, IN const fs::path&
 	
 	status = g_interface->CreateCallback(Module, EVENT_FRAME, FrameCallback, 2);
 	if (!AurieSuccess(status))
-		printf("Failed to create frame callback\n");
-
+	{
+		DbgPrintEx(LOG_SEVERITY_CRITICAL, "Failed to create frame callback\n");
+		return AURIE_MODULE_INITIALIZATION_FAILED;
+	}
+	
 	status = g_interface->CreateCallback(Module, EVENT_OBJECT_CALL, EventCallback, 1);
 	if (!AurieSuccess(status))
-		printf("Failed to create event callback\n");
+	{
+		DbgPrintEx(LOG_SEVERITY_CRITICAL, "Failed to create event callback\n");
+		return AURIE_MODULE_INITIALIZATION_FAILED;
+	}
 
-	Print("Mod successfully initialized!");
-
-	// I don't know if this does anything
-	//g_interface->CallBuiltin("variable_global_set", {RValue("debug"), RValue(true)});
-	//g_interface->CallBuiltin("variable_global_set", {RValue("debug_visible"), RValue(true)});
+	DbgPrintEx(LOG_SEVERITY_INFO, "Mod successfully initialized!\n");
 
 	// Read all custom settings from the settings INI.
 	IniOpen(MOD_SETTINGS_FILE);
@@ -557,18 +523,7 @@ EXPORTED AurieStatus ModuleInitialize(IN AurieModule* Module, IN const fs::path&
 	IniClose();
 
 	// Hook into environment_get_username to override the options menu header later
-	// I'm pretty certain this function is not used in the game at all so hooking into it is fine
-	CScript *scrData = nullptr;
-	TRoutine scrFunction = nullptr;
-
-	status = g_interface->GetNamedRoutinePointer("gml_Script_environment_get_username", reinterpret_cast<PVOID*>(&scrData));
-	if (!AurieSuccess(status))
-		Print("Failed to get function data");
-	else
-	{
-		Print("Hooking into environment_get_username...");
-		MmCreateHook(Module, "environment_get_username_hook", scrData->m_Functions->m_ScriptFunction, EnvironmentGetUsernameHook, reinterpret_cast<PVOID*>(&scrFunction));
-	}
+	g_envGetUsernameOriginal = CreateHook(Module, "gml_Script_environment_get_username", "environment_get_username_hook", EnvironmentGetUsernameHook);
 
 	return AURIE_SUCCESS;
 }

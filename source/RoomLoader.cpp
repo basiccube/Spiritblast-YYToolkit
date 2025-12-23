@@ -50,3 +50,33 @@ void GoToRoomLoaderRoom()
 		}
 	}
 }
+
+void InitializeRoomLoaderRoom()
+{
+	RValue playerObject = g_interface->CallBuiltin("asset_get_index", {"ob_player"});
+	if (!g_interface->CallBuiltin("instance_exists", {playerObject}).ToBoolean())
+	{
+		Print("Creating player object");
+		g_interface->CallBuiltin("instance_create_depth", {32, 32, 0, playerObject});
+	}
+
+	vector<json> objectData = g_roomData["objects"];
+	for (int i = 0; i < objectData.size(); i++)
+	{
+		json obj = objectData[i];
+
+		string oid = obj["id"];
+		int ox = obj["x"];
+		int oy = obj["y"];
+		int oxscale = obj["xscale"];
+		int oyscale = obj["yscale"];
+
+		RValue oasset = g_interface->CallBuiltin("asset_get_index", {RValue(oid)});
+		if (oasset.ToInt32() == GM_INVALID)
+			continue;
+
+		RValue oinst = g_interface->CallBuiltin("instance_create_layer", {ox, oy, "InstancesFG", oasset});
+		g_interface->CallBuiltin("variable_instance_set", {oinst, "image_xscale", oxscale});
+		g_interface->CallBuiltin("variable_instance_set", {oinst, "image_yscale", oyscale});
+	}
+}
