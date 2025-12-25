@@ -1,4 +1,5 @@
 #include "DebugCollision.h"
+#include "Variables.h"
 
 struct DebugSpriteData
 {
@@ -64,20 +65,20 @@ void GetDebugCollisionData(const char *name, int gameplayLayer = 0)
 		if (inst.IsUndefined())
 			continue;
 
-		RValue obj = g_interface->CallBuiltin("variable_instance_get", {inst, "object_index"});
+		RValue obj = GetInstanceVariable(inst, "object_index");
 		RValue objname = g_interface->CallBuiltin("object_get_name", {obj});
-		RValue layer = g_interface->CallBuiltin("variable_instance_get", {inst, "gameplayLayer"});
+		RValue layer = GetInstanceVariable(inst, "gameplayLayer");
 
 		if (objname.ToString() != name || layer.ToInt32() != gameplayLayer)
 			continue;
 
 		DebugSpriteData data = {
-			g_interface->CallBuiltin("variable_instance_get", {inst, "sprite_index"}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, "x"}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, "y"}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, "image_xscale"}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, "image_yscale"}),
-			g_interface->CallBuiltin("variable_instance_get", {inst, "image_angle"})
+			GetInstanceVariable(inst, "sprite_index"),
+			GetInstanceVariable(inst, "x"),
+			GetInstanceVariable(inst, "y"),
+			GetInstanceVariable(inst, "image_xscale"),
+			GetInstanceVariable(inst, "image_yscale"),
+			GetInstanceVariable(inst, "image_angle")
 		};
 
 		RValue validSprite = g_interface->CallBuiltin("sprite_exists", {data.sprite});

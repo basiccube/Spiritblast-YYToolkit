@@ -1,12 +1,14 @@
 #include "Menus.h"
+#include "Variables.h"
+#include "Functions.h"
 
 void ChangeMenuPage(RValue menu, string name, int addToHistory)
 {
-	RValue changePage = g_interface->CallBuiltin("variable_instance_get", {menu, RValue("changePage")});
+	RValue changePage = GetInstanceVariable(menu, "changePage");
 	if (changePage.IsUndefined())
 		return;
 
-	RValue pageValue = g_interface->CallBuiltin("variable_instance_get", {menu, RValue(name)});
+	RValue pageValue = GetInstanceVariable(menu, name);
 	if (pageValue.IsUndefined())
 	{
 		Print("Invalid page name!");
@@ -17,17 +19,16 @@ void ChangeMenuPage(RValue menu, string name, int addToHistory)
 	if (addToHistory != -1)
 		argArray.push_back(addToHistory);
 
-	RValue funcArgs = RValue(argArray);
-	g_interface->CallBuiltin("method_call", {changePage, funcArgs});
+	CallMethod(changePage, argArray);
 }
 
 RValue CreateMenuPage(RValue menu)
 {
-	RValue pageCreate = g_interface->CallBuiltin("variable_instance_get", {menu, "pageCreate"});
+	RValue pageCreate = GetInstanceVariable(menu, "pageCreate");
 	if (pageCreate.IsUndefined())
 		return RValue();
 
-	RValue newPage = g_interface->CallBuiltin("method_call", {pageCreate});
+	RValue newPage = CallMethod(pageCreate);
 	return newPage;
 }
 
@@ -41,7 +42,7 @@ void AddItemToPageValue(RValue menu, RValue page, CInstance *item, int index)
 
 void AddItemToPage(RValue menu, string page, CInstance *item, int index)
 {
-	RValue pageVar = g_interface->CallBuiltin("variable_instance_get", {menu, RValue(page)});
+	RValue pageVar = GetInstanceVariable(menu, page);
 	if (pageVar.IsUndefined())
 	{
 		Print(RValue("Invalid page specified: " + page));
@@ -53,7 +54,7 @@ void AddItemToPage(RValue menu, string page, CInstance *item, int index)
 
 RValue CreateFakeMenuInstance(RValue menu)
 {
-	RValue defaultFont = g_interface->CallBuiltin("variable_instance_get", {menu, "defaultFont"});
+	RValue defaultFont = GetInstanceVariable(menu, "defaultFont");
 
 	// Create a fake struct consisting of the variables required
 	// by the menu button since menu.ToInstance() doesn't fucking work
@@ -107,7 +108,7 @@ CInstance *CreateMenuToggle(RValue menu, string text, RValue value, RValue objec
 
 CInstance *CreateChangePageButton(RValue menu, string text, RValue targetPage)
 {
-	RValue changePage = g_interface->CallBuiltin("variable_instance_get", {menu, "changePage"});
+	RValue changePage = GetInstanceVariable(menu, "changePage");
 	if (changePage.IsUndefined())
 		return nullptr;
 
@@ -117,7 +118,7 @@ CInstance *CreateChangePageButton(RValue menu, string text, RValue targetPage)
 
 CInstance *CreateBackButton(RValue menu, string text)
 {
-	RValue popPage = g_interface->CallBuiltin("variable_instance_get", {menu, "popPage"});
+	RValue popPage = GetInstanceVariable(menu, "popPage");
 	if (popPage.IsUndefined())
 		return nullptr;
 

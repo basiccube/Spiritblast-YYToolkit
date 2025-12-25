@@ -1,4 +1,5 @@
 #include "main.h"
+#include "Variables.h"
 
 #include "RoomLoader.h"
 #include <fstream>
@@ -76,7 +77,7 @@ void InitializeRoomLoaderRoom()
 			continue;
 
 		RValue oinst = g_interface->CallBuiltin("instance_create_layer", {ox, oy, "InstancesFG", oasset});
-		g_interface->CallBuiltin("variable_instance_set", {oinst, "image_xscale", oxscale});
-		g_interface->CallBuiltin("variable_instance_set", {oinst, "image_yscale", oyscale});
+		SetInstanceVariable(oinst, "image_xscale", oxscale);
+		SetInstanceVariable(oinst, "image_yscale", oyscale);
 	}
 }

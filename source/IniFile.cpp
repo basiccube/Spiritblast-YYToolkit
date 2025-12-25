@@ -1,4 +1,5 @@
 #include "IniFile.h"
+#include "Variables.h"
 
 void IniOpen(string path)
 {
@@ -67,14 +68,14 @@ RValue ReadAndSetGlobalFromIni(vector<RValue> iniArgs, string globalVar, bool is
 	else
 		val = g_interface->CallBuiltin("ini_read_real", iniArgs);
 
-	g_interface->CallBuiltin("variable_global_set", {RValue(globalVar), val});
+	SetGlobalVariable(globalVar, val);
 
 	return val;
 }
 
 RValue GetGlobalAndWriteToIni(vector<RValue> iniArgs, string globalVar)
 {
-	RValue val = g_interface->CallBuiltin("variable_global_get", {RValue(globalVar)});
+	RValue val = GetGlobalVariable(globalVar);
 	iniArgs.push_back(val);
 
 	if (val.IsString())
