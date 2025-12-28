@@ -56,7 +56,7 @@ void DrawDebugCollisionData()
 
 void GetDebugCollisionData(const char *name, int gameplayLayer = 0)
 {
-	RValue obj = g_interface->CallBuiltin("asset_get_index", {name});
+	RValue obj = GetAsset(name);
 	RValue instNum = g_interface->CallBuiltin("instance_number", {obj});
 
 	for (int i = 0; i < instNum.ToInt32(); i++)

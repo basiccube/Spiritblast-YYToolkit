@@ -7,6 +7,9 @@ using json = nlohmann::json;
 
 extern json g_roomData;
 
+// Creates stage data for a level.
+map<string, RValue> CreateStageData();
+
 // Loads room data from the specified file path.
 json LoadRoomData(string path);
 

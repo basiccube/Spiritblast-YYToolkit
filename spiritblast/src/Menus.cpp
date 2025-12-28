@@ -68,7 +68,7 @@ RValue CreateFakeMenuInstance(RValue menu)
 
 CInstance *CreateMenuButton(RValue menu, string text, RValue buttonMethod, RValue params)
 {
-	RValue menuButton = g_interface->CallBuiltin("asset_get_index", {"menuButton"});
+	RValue menuButton = GetAsset("menuButton");
 	if (menuButton.ToInt32() == GM_INVALID)
 		return nullptr;
 
@@ -88,7 +88,7 @@ CInstance *CreateMenuButton(RValue menu, string text, RValue buttonMethod, RValu
 
 CInstance *CreateMenuToggle(RValue menu, string text, RValue value, RValue object, RValue varName)
 {
-	RValue menuToggle = g_interface->CallBuiltin("asset_get_index", {"menuToggle"});
+	RValue menuToggle = GetAsset("menuToggle");
 	if (menuToggle.ToInt32() == GM_INVALID)
 		return nullptr;
 

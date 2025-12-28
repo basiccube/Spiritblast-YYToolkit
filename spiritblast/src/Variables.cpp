@@ -59,3 +59,9 @@ RValue CreateReference(RValue inst, RValue var, int index)
 	RValue ref = g_interface->CallBuiltin("ref_create", {inst, var, index});
 	return ref;
 }
+
+RValue GetAsset(string name)
+{
+	RValue asset = g_interface->CallBuiltin("asset_get_index", {RValue(name)});
+	return asset;
+}

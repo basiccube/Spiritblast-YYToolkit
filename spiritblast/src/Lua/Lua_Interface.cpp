@@ -27,7 +27,10 @@ extern "C"
 			switch (lua_type(state, -1))
 			{
 				case LUA_TNUMBER:
-					funcArgs.push_back(luaL_checknumber(state, -1));
+					if (lua_isinteger(state, -1))
+						funcArgs.push_back(luaL_checkinteger(state, -1));
+					else
+						funcArgs.push_back(luaL_checknumber(state, -1));
 					break;
 
 				case LUA_TBOOLEAN:
@@ -36,6 +39,10 @@ extern "C"
 
 				case LUA_TSTRING:
 					funcArgs.push_back(luaL_checkstring(state, -1));
+					break;
+
+				default:
+					funcArgs.push_back(luaL_checknumber(state, -1));
 					break;
 			}
 

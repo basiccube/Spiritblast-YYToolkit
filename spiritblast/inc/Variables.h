@@ -28,3 +28,6 @@ void SetGlobalVariable(string name, RValue value);
 
 // Creates a reference to a variable in an instance or struct.
 RValue CreateReference(RValue inst, RValue var, int index = 0);
+
+// Returns the asset from the specified name.
+RValue GetAsset(string name);

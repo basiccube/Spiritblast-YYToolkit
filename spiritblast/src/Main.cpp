@@ -12,7 +12,7 @@ LuaContext *g_lua = nullptr;
 
 RValue GetInstance(string name)
 {
-	RValue obj = g_interface->CallBuiltin("asset_get_index", {RValue(name)});
+	RValue obj = GetAsset(name);
 	RValue instNum = g_interface->CallBuiltin("instance_number", {obj});
 
 	for (int i = 0; i < instNum.ToInt32(); i++)
@@ -86,7 +86,7 @@ RValue &EnvironmentGetUsernameHook(CInstance *self, CInstance *other, RValue &re
 			else
 			{
 				RValue getPageHeader = g_interface->CallBuiltin("struct_get", {otherValue, "getPageHeaderOriginal"});
-				RValue headerValue = g_interface->CallBuiltin("method_call", {getPageHeader});
+				RValue headerValue = CallMethod(getPageHeader);
 				returnValue = headerValue;
 			}
 		}
@@ -198,7 +198,7 @@ void EventCallback(FWCodeEvent &eventCtx)
 					if (event_object_name.ToString() == "ob_player" && g_debugOverlayOpen)
 					{
 						bool debugCheck = IsKeyboardUsedByDebugOverlay();
-						RValue playerInputManager = g_interface->CallBuiltin("asset_get_index", {"ob_playerInputManager"});
+						RValue playerInputManager = GetAsset("ob_playerInputManager");
 						RValue instCheck = g_interface->CallBuiltin("instance_exists", {playerInputManager});
 						if (debugCheck)
 						{
@@ -214,7 +214,7 @@ void EventCallback(FWCodeEvent &eventCtx)
 					else if (event_object_name.ToString() == "ob_camera" && g_debugOverlayOpen)
 					{
 						bool debugCheck = IsKeyboardUsedByDebugOverlay();
-						RValue globalInput = g_interface->CallBuiltin("asset_get_index", {"ob_globalInput"});
+						RValue globalInput = GetAsset("ob_globalInput");
 						RValue instCheck = g_interface->CallBuiltin("instance_exists", {globalInput});
 						if (debugCheck)
 						{
@@ -282,7 +282,7 @@ void EventCallback(FWCodeEvent &eventCtx)
 							InitializeRoomLoaderRoom();
 						else if (roomName.ToString() == "rm_splashScreen" && g_skipSplash)
 						{
-							RValue rm_logoDrop = g_interface->CallBuiltin("asset_get_index", {"rm_logoDrop"});
+							RValue rm_logoDrop = GetAsset("rm_logoDrop");
 							if (rm_logoDrop.ToInt32() != GM_INVALID)
 							{
 								Print("Skip splash screens");
@@ -303,8 +303,8 @@ void EventCallback(FWCodeEvent &eventCtx)
 						
 						if (g_debugOverlayOpen)
 						{
-							RValue playerInputManager = g_interface->CallBuiltin("asset_get_index", {"ob_playerInputManager"});
-							RValue globalInput = g_interface->CallBuiltin("asset_get_index", {"ob_globalInput"});
+							RValue playerInputManager = GetAsset("ob_playerInputManager");
+							RValue globalInput = GetAsset("ob_globalInput");
 
 							g_interface->CallBuiltin("instance_activate_object", {playerInputManager});
 							g_interface->CallBuiltin("instance_activate_object", {globalInput});
