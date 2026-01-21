@@ -39,6 +39,14 @@ bool exec_and_wait(string cmdLine)
 	if (!CreateProcess(NULL, cmdStr, NULL, NULL, FALSE, 0, NULL, NULL, &startInfo, &procInfo))
 	{
 		printf("Failed to create process : %s\n", cmdLine.c_str());
+
+		DWORD err = GetLastError();
+
+		LPVOID msgBuf;
+		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&msgBuf, 0, NULL);
+		wprintf((LPCTSTR)msgBuf);
+
+		LocalFree(msgBuf);
 		return false;
 	}
 	WaitForSingleObject(procInfo.hProcess, INFINITE);

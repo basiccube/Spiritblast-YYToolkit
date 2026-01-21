@@ -56,9 +56,17 @@ json LoadRoomData(string path)
 
 void GoToRoomLoaderRoom()
 {
-	g_roomData = LoadRoomData("testrm.json");
+	g_roomData = LoadRoomData("room.rfrm");
 	if (g_roomData != nullptr)
 	{
+		int rmVersion = g_roomData["rf_roomversion"];
+		if (rmVersion != ROOM_VERSION)
+		{
+			Print("Incorrect room version!");
+			Print(RValue("Expected " + to_string(ROOM_VERSION) + ", got " + to_string(rmVersion)));
+			return;
+		}
+
 		RValue templateRoom = GetAsset("rm_template_room");
 		if (templateRoom.ToInt32() != GM_INVALID)
 		{
@@ -77,24 +85,71 @@ void GoToRoomLoaderRoom()
 
 void InitializeRoomLoaderRoom()
 {
-	vector<json> objectData = g_roomData["objects"];
-	for (int i = 0; i < objectData.size(); i++)
+	// Create all layers and objects for the room
+	vector<json> layers = g_roomData["layers"];
+	for (int i = 0; i < layers.size(); i++)
 	{
-		json obj = objectData[i];
+		json lay = layers[i];
+		string layName = lay["name"];
+		int layDepth = lay["depth"];
 
-		string oid = obj["id"];
-		int ox = obj["x"];
-		int oy = obj["y"];
-		int oxscale = obj["xscale"];
-		int oyscale = obj["yscale"];
+		if (!g_interface->CallBuiltin("layer_exists", {RValue(layName)}))
+			g_interface->CallBuiltin("layer_create", {layDepth, RValue(layName)});
 
-		RValue oasset = GetAsset(oid);
-		if (oasset.ToInt32() == GM_INVALID)
-			continue;
+		RValue layID = g_interface->CallBuiltin("layer_get_id", {RValue(layName)});
+		vector<json> instances = lay["instances"];
+		for (int j = 0; j < instances.size(); j++)
+		{
+			json instdata = instances[j];
 
-		RValue oinst = g_interface->CallBuiltin("instance_create_layer", {ox, oy, "InstancesFG", oasset});
-		SetInstanceVariable(oinst, "image_xscale", oxscale);
-		SetInstanceVariable(oinst, "image_yscale", oyscale);
+			string id = instdata["id"];
+			float x = instdata["x"];
+			float y = instdata["y"];
+			float xscale = instdata["xscale"];
+			float yscale = instdata["yscale"];
+
+			RValue obj = GetAsset(id);
+			if (obj.ToInt32() == GM_INVALID)
+				continue;
+
+			RValue inst = g_interface->CallBuiltin("instance_create_layer", {x, y, layID, obj});
+			SetInstanceVariable(inst, "image_xscale", xscale);
+			SetInstanceVariable(inst, "image_yscale", yscale);
+
+			vector<json> instvars = instdata["variables"];
+			for (int k = 0; k < instvars.size(); k++)
+			{
+				vector<json> var = instvars[k];
+
+				string varname = var[0];
+				json varvalue = var[1];
+
+				// hacky workaround for this one issue...
+				if ((id == "ob_spring" || id == "ob_spring_BG") && (varname == "targetX" || varname == "targetY"))
+				{
+					int targetval = varvalue.get<int>();
+					if (targetval == -1)
+						continue;
+				}
+				
+				switch (varvalue.type())
+				{
+					case json::value_t::boolean:
+						SetInstanceVariable(inst, varname, varvalue.get<bool>());
+						break;
+
+					case json::value_t::number_float:
+					case json::value_t::number_unsigned:
+					case json::value_t::number_integer:
+						SetInstanceVariable(inst, varname, varvalue.get<float>());
+						break;
+
+					case json::value_t::string:
+						SetInstanceVariable(inst, varname, RValue(varvalue.get<string>()));
+						break;
+				}
+			}
+		}
 	}
 
 	RValue ob_stageManager = GetAsset("ob_stageManager");

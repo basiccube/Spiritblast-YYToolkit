@@ -7,6 +7,8 @@ using json = nlohmann::json;
 
 extern json g_roomData;
 
+#define ROOM_VERSION 1
+
 // Creates stage data for a level.
 map<string, RValue> CreateStageData();
 
