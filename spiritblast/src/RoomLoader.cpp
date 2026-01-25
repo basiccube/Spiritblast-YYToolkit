@@ -1,4 +1,3 @@
-#include "main.h"
 #include "Variables.h"
 #include "Functions.h"
 
@@ -6,6 +5,65 @@
 #include <fstream>
 
 json g_roomData;
+string g_roomName;
+map<string, vector<string>> g_roomInstanceMap;
+
+string GetInstanceIDString(string obj, float x, float y)
+{
+	string instString = obj + "_" + to_string(x) + "_" + to_string(y);
+	return instString;
+}
+
+void ClearInstanceMap()
+{
+	Print("Clearing room loader instance map...");
+	for (auto &[key, value] : g_roomInstanceMap)
+	{
+		value.clear();
+		g_roomInstanceMap.erase(key);
+	}
+}
+
+void CheckInstancesInRoomList()
+{
+	if (!g_roomInstanceMap.contains(g_roomName))
+		return;
+
+	RValue instance_count = RValue();
+	g_interface->GetBuiltin("instance_count", nullptr, NULL_INDEX, instance_count);
+
+	vector<string> &instances = g_roomInstanceMap[g_roomName];
+	for (int i = 0; i < instances.size(); i++)
+	{
+		bool exists = false;
+		string instString = instances[i];
+
+		// Not a good way to do this, but it'll do
+		for (int j = 0; j < instance_count.ToInt32(); j++)
+		{
+			RValue instID = g_interface->CallBuiltin("instance_id_get", {j});
+			RValue object_index = GetInstanceVariable(instID, "object_index");
+
+			string name = g_interface->CallBuiltin("object_get_name", {object_index}).ToString();
+			float x = GetInstanceVariable(instID, "x").ToDouble();
+			float y = GetInstanceVariable(instID, "y").ToDouble();
+
+			string istr = GetInstanceIDString(name, x, y);
+			if (istr == instString)
+			{
+				exists = true;
+				break;
+			}
+
+		}
+
+		if (!exists)
+		{
+			instances.erase(instances.begin() + i);
+			i--;
+		}
+	}
+}
 
 map<string, RValue> CreateStageData()
 {
@@ -67,6 +125,9 @@ void GoToRoomLoaderRoom(string name)
 			return;
 		}
 
+		CheckInstancesInRoomList();
+		g_roomName = name;
+
 		RValue templateRoom = GetAsset("rm_template_room");
 		if (templateRoom.ToInt32() != GM_INVALID)
 		{
@@ -85,6 +146,12 @@ void GoToRoomLoaderRoom(string name)
 
 void InitializeRoomLoaderRoom()
 {
+	bool firstTime = false;
+	if (!g_roomInstanceMap.contains(g_roomName))
+		firstTime = true;
+
+	vector<string> &instanceList = g_roomInstanceMap[g_roomName];
+
 	// Create all layers and objects for the room
 	vector<json> layers = g_roomData["layers"];
 	for (int i = 0; i < layers.size(); i++)
@@ -113,6 +180,31 @@ void InitializeRoomLoaderRoom()
 				continue;
 
 			RValue inst = g_interface->CallBuiltin("instance_create_layer", {x, y, layID, obj});
+			string instString = GetInstanceIDString(id, x, y);
+
+			if (firstTime)
+				instanceList.push_back(instString);
+			else
+			{
+				bool destroy = true;
+				// find the instance and destroy it if it doesn't exist
+				for (int k = 0; k < instanceList.size(); k++)
+				{
+					string lstr = instanceList[k];
+					if (instString == lstr)
+					{
+						destroy = false;
+						break;
+					}
+				}
+
+				if (destroy)
+				{
+					g_interface->CallBuiltin("instance_destroy", {inst, false});
+					continue;
+				}
+			}
+
 			SetInstanceVariable(inst, "image_xscale", xscale);
 			SetInstanceVariable(inst, "image_yscale", yscale);
 

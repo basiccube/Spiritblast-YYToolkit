@@ -294,13 +294,17 @@ void EventCallback(FWCodeEvent &eventCtx)
 						// Load the custom room data if we are in the template room
 						if (roomName.ToString() == "rm_template_room")
 							InitializeRoomLoaderRoom();
-						else if (roomName.ToString() == "rm_splashScreen" && g_skipSplash)
+						else if (roomName.ToString() == "rm_splashScreen")
 						{
-							RValue rm_logoDrop = GetAsset("rm_logoDrop");
-							if (rm_logoDrop.ToInt32() != GM_INVALID)
+							ClearInstanceMap();
+							if (g_skipSplash)
 							{
-								Print("Skip splash screens");
-								g_interface->CallBuiltin("room_goto", {rm_logoDrop});
+								RValue rm_logoDrop = GetAsset("rm_logoDrop");
+								if (rm_logoDrop.ToInt32() != GM_INVALID)
+								{
+									Print("Skip splash screens");
+									g_interface->CallBuiltin("room_goto", {rm_logoDrop});
+								}
 							}
 						}
 
