@@ -86,7 +86,6 @@ namespace RoomLoader
 					exists = true;
 					break;
 				}
-
 			}
 
 			if (!exists)
@@ -251,14 +250,10 @@ namespace RoomLoader
 
 					string varname = var[0];
 					json varvalue = var[1];
+					string vartype = var[2];
 
-					// hacky workaround for this one issue...
-					if ((id == "ob_spring" || id == "ob_spring_BG") && (varname == "targetX" || varname == "targetY"))
-					{
-						int targetval = varvalue.get<int>();
-						if (targetval == -1)
-							continue;
-					}
+					if (vartype == "default")
+						continue;
 
 					switch (varvalue.type())
 					{
