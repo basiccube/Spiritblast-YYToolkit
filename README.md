@@ -1,6 +1,7 @@
 # ![Spiritblast Logo](/assets/spiritblast.png) Spiritblast
 
-A mod for ANTONBLAST, made possible thanks to Aurie Framework and YYToolkit.
+A mod for ANTONBLAST (YYC builds), made possible thanks to Aurie Framework and YYToolkit.  
+The vm_public branch will not work with this mod!
 
 Currently features the following:
 * Access to the GameMaker debug overlay
@@ -18,9 +19,6 @@ There are a few keys that have been added that do some sort of action:
 
 To be able to use these keys, you need to first enable them within the new "Debug" page in the options menu.
 
-**The mod in its current state is not finished and is still a work in progress.**  
-Room loading functionality will have more details when it is in a more usable form.
-
 ## Install
 
 The installation process is a bit complicated, and there's nothing I can do about that, especially since this is all relying on, at the time of writing this, still WIP tools.  
@@ -36,7 +34,7 @@ Make sure to read the installation steps thoroughly, as not doing any of these s
 * **Download AurieCore.dll and AuriePatcher.exe from [here](https://github.com/AurieFramework/Aurie/releases/tag/v2.0.0b)**  
 Make sure you download these files from the "Aurie v2" release!
 * **Download YYToolkit.dll from [here](https://github.com/AurieFramework/YYToolkit/releases/tag/v5.0.0a)**  
-Again, make sure it's from the "v5 open-beta, build A" release.
+Again, make sure it's from the "v5 open-beta, build A" release. The newer v5.0.0b release causes issues with the mod.
 * **Copy AurieCore.dll into the `mods/Native` folder**
 * **Copy YYToolkit.dll into the `mods/Aurie` folder**
 * **Patch ANTONBLAST.exe using AuriePatcher**  
